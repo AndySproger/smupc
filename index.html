@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- Datatable dependencies 
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		
+		<title>DataTables Editor - upc_table</title>
+
+		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/s/bs-3.3.6/jqc-1.12.0,dt-1.10.11,b-1.1.2,b-print-1.1.2,fh-3.1.1,r-2.0.2,sc-1.4.1,se-1.1.2/datatables.min.css">
+		<link rel="stylesheet" type="text/css" href="css/generator-base.css">
+		<link rel="stylesheet" type="text/css" href="css/editor.bootstrap.min.css">
+
+		<script type="text/javascript" charset="utf-8" src="https://cdn.datatables.net/s/bs-3.3.6/jqc-1.12.0,dt-1.10.11,b-1.1.2,b-print-1.1.2,fh-3.1.1,r-2.0.2,sc-1.4.1,se-1.1.2/datatables.min.js"></script>
+		<script type="text/javascript" charset="utf-8" src="js/dataTables.editor.min.js"></script>
+		<script type="text/javascript" charset="utf-8" src="js/editor.bootstrap.min.js"></script>
+		<script type="text/javascript" charset="utf-8" src="js/table.upc_table.js"></script> -->
+        
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+        <!-- jQuery library -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+        <!-- Latest compiled JavaScript -->
+        <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+        
+        <!-- DataTables stuff I threw in 
+        <script src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.10.12/css/jquery.dataTables.min.css"></script> -->
+        
+        <!-- DataTables -->
+        <script type="text/javascript" charset="utf-8" src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.10.12/css/jquery.dataTables.min.css">
+        
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Smooth-On UPC Inventory</title>
+        <meta name="description" content="UPC Inventory">
+        <link rel="stylesheet" href="main.css">
+        
+        <script>
+        $(document).ready(function() {
+            // Establish table
+            var table = $('#upc_table').DataTable();
+            // UPC API key: http://upcdatabase.org/ucp-api
+            var upcKey = "eb2578cb259b86125fede472f6399f08";
+            
+            // Enables hitting enter on the scan input to act as clicking go
+            $("form").submit(function() { $('#go_btn').click(); return false;});
+            
+            // Add function
+            $('#go_btn').on( 'click', function () {
+                
+                // Get UPC entered
+                var upcToAdd = document.getElementById("upc_input").value;
+
+                // Check UPC exists in DB
+                if(false) { // If exist, update
+                    alert("DUPE");
+                    //IMPLEMENT (Maybe make seperate function for use of QTY editing delete/update)
+                    // Update toast
+                }
+                else{       // If not exist, create
+                    // Create Amazon request
+                    $.ajax({
+                        url: 'request.php',
+                        type: 'POST',
+                        data: {"makeRequest": upcToAdd},
+                        success: function(response) {
+                            // Execute request
+                            $.ajax({
+                                type: "GET",
+                                url: 'cdproxy.php',
+                                data: {"proxyRequest": response},
+                                dataType: "xml",
+                                crossDomain: true,
+                                success: function(data) {
+                                    
+                                    // IF: UPC is not valid, ERROR
+                                    if($(data).find('Code').text() != ''){  
+
+                                        // Error Toast - Does not exist
+                                        alert("INVALID UPC - REPLACE THIS WITH TOAST");
+
+                                    }
+                                    // ELSE: UPC is valid, add
+                                    else{           
+
+                                        table.row.add( [
+                                            $(data).find('Brand').text(),
+                                            $(data).find('Model').text(),
+                                            $(data).find('Title').text(),
+                                            "1",
+                                            upcToAdd
+                                        ] ).draw( false );
+
+                                        // Added toast
+                                    }
+                                    
+                                },
+                                error: function(err) {
+                                    // Error toast - bad fetch
+                                    alert("ERROR: Could not fetch UPC from database");
+
+                                }
+                            });
+
+                        },
+                        error: function() {alert("ERROR: request.php has failed");}
+                    });
+
+                }
+                
+                // Reset input
+                $('#upc_input').val('');
+            } );
+
+        } );
+        </script>
+        
+    </head>    
+        
+    <body class="bootstrap">
+        <!-- Wrap all page content here -->
+        <div id="wrap">
+            
+            <!-- Fixed navbar -->
+            <div class="navbar navbar-default navbar-fixed-top">
+            <div class="container">
+            <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Smooth-On, Inc.</a>
+            </div>
+            </div>
+            </div>
+            
+            <!-- Begin page content -->
+            <div class="container">
+                
+                <div class="page-header text-center v-center">
+                    <h1>Inventory</h1>
+                </div>
+                
+                <form class="col-lg-12">
+                    <div class="input-group input-group-lg col-sm-offset-3 col-sm-6">
+                        <input id="upc_input" type="text" class="center-block form-control input-lg" title="Scan UPC" placeholder="UPC">
+                        <span class="input-group-btn">
+                            <button id="go_btn" class="btn btn-lg btn-primary" type="button">GO</button>
+                        </span>
+                    </div>
+                </form>
+                
+                <div id = "upc_table_container">
+                    <table id="upc_table" class="display" cellspacing="0" width="100%">
+                        <thead>
+                            <tr>
+                                <th>Brand</th>
+                                <th>Model</th>
+                                <th>Description</th>
+                                <th>Quantity</th>
+                                <th id="upc_col">UPC</th>
+                            </tr>
+                        </thead>
+                    </table>    
+                </div>
+                
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div id="footer">
+          <div class="container">
+            <p class="text-muted credit">Copyright 2016
+            <a href="http://www.smooth-on.com">Smooth-On, Inc.</a>
+          </div>
+        </div>
+    </body>
+    
+</html>
